@@ -1,8 +1,43 @@
 # Exploration des données
 
-# 📦 Installer et charger les packages ----
+# Table des matières ----
 
-# Décommenter les lignes ci-dessous si besoin
+# 0. Comment utiliser ce script
+# 1. Installer et charger les packages
+# 2. Importer les données
+# 3. Explorer les données
+#     3.1 Afficher les données
+#     3.2 Type et classe
+#     3.3 Structure des données
+#     3.4 Synthèse des données 
+# 4. Explorer les données manquantes
+#     4.1 Données manquantes par variable
+#     4.2 Données manquantes par observation
+#     4.3 Répartition des données manquantes
+# 5. Nettoyer les données
+
+# 0. Comment utiliser ce script ----
+
+# Pour exécuter une commande : se placer sur la ligne de la commande et utiliser 
+# la combinaison `Ctrl` + `Entrée`, ou cliquer sur `Run`
+
+# Pour exécuter plusieurs lignes : sélectionner les lignes à exécuter et utiliser
+# la combinaison `Ctrl` + `Entrée`, ou cliquer sur `Run`
+
+# Pour exécuter l'ensemble du script : utiliser la combinaison 
+# `Ctrl` + `Shift` + `Entrée`, ou cliquer sur `Source`
+
+# Pour afficher les différentes sections : cliquer sur l'icône 📄 à droite du script
+# (à côté de `Source`)
+
+# Pour replier les sections : `Alt` + `O`
+
+# Pour développer les sections : `Alt` + `Shift` + `O`
+
+# 1. Installer et charger les packages ----
+
+# Décommenter les lignes ci-dessous si besoin et les exécuter pour 
+# télécharger les packages nécessaires
 
 # install.packages("tidyverse")
 # install.packages("skimr")
@@ -10,16 +45,18 @@
 # install.packages("palmerpenguins")
 # install.packages("arrow")
 
-# ⌨️ Raccourci clavier pour insérer ou retirer un commentaire : `Ctrl` + `Shift` + `C`
+# ⌨️ Raccourci clavier pour insérer ou retirer un commentaire : 
+#     `Ctrl` + `Shift` + `C`
 
 # Charger les packages :
+
 library(tidyverse)          # manipulation et visualisation des données
 library(skimr)              # exploration des données
 library(naniar)             # exploration des données manquantes
 library(arrow)              # exporter des données en conservant les métadonnées
 library(palmerpenguins)     # jeu de données
 
-# 📄 Charger les données ----
+# 2. Importer les données ----
 
 # Nous allons utiliser le jeu de données `penguins`, disponible dans le 
 # packages {palmerpenguins}.
@@ -34,7 +71,9 @@ penguins <- palmerpenguins::penguins
 
 # ⌨️ Raccourci clavier pour insérer une flèche d'assignation : # `Alt` + `-`
 
-# 🧱 Structure des données ----
+# 3. Explorer les données ----
+
+## 3.1 Afficher les données ----
 
 # Afficher les données dans un onglet : 
 View(penguins)
@@ -47,14 +86,6 @@ View(penguins)
 # Dans les versions récentes de RStudio, une synthèse des variables s'affiche : 
 # histogramme pour les variables quantitatives, bar plot pour les variables
 # qualitatives.
-
-typeof(penguins)            
-# liste (un data.frame est une liste particulière)
-
-class(penguins)             
-# data.frame = tableau
-# tbl = `tibble`, le data.frame spécifique au tidyverse
-# tbl_df = `tibble` et `data.frame`
 
 # Afficher les six premières lignes du tableau
 head(penguins)
@@ -84,6 +115,18 @@ penguins |>
 # Pour définir le pipe à utiliser (`%>%` ou `|>`) : 
 #     Tools > Global Options > Code > Editing > Use native pipe operator
 
+## 3.2 Type et classe ----
+
+typeof(penguins)            
+# liste (un data.frame est une liste particulière)
+
+class(penguins)             
+# data.frame = tableau
+# tbl = `tibble`, le data.frame spécifique au tidyverse
+# tbl_df = `tibble` et `data.frame`
+
+## 3.3 Structure des données ----
+
 # Afficher la structure des données : 
 str(penguins)
 
@@ -108,6 +151,8 @@ as.integer(head(penguins$species))   # affiche les valeurs numériques correspon
 # Equivalent de la fonction str(), mais spécifique au tidyverse
 glimpse(penguins)
 
+## 3.4 Synthèse des données ----
+
 # Afficher une synthèse détaillée des données
 skim(penguins)
 
@@ -120,13 +165,23 @@ skim(penguins)
 # La fonction summary() affiche une synthèse du tableau : 
 summary(penguins)
 
-# 🔎 Exploration des données manquantes ----
+# 4. Explorer les données manquantes ----
 
 # Compter le nombre de données manquantes par variable
 colSums(is.na(penguins))
 
+## 4.1 Données manquantes par variable ----
+
 # Afficher le nombre et la proportion de NA par variable
 miss_var_summary(penguins)
+
+# Table de contingence
+miss_var_table(penguins)
+
+# Visualiser le nombre de NA par variable
+gg_miss_var(penguins)
+
+## 4.2 Données manquantes par observation ----
 
 # Afficher le nombre et la proportion de NA par observation
 miss_case_summary(penguins) |> 
@@ -139,11 +194,13 @@ penguins |>
   # conserver les observations (lignes) ayant au moins 1 NA
   filter(if_any(everything(), is.na))
 
-# Visualiser le nombre de données manquantes par variable
-gg_miss_var(penguins)
+# Table de contingence
+miss_case_table(penguins)
 
 # Visualiser le nombre de données manquantes par observation
 gg_miss_case(penguins)
+
+## 4.3 Répartition des données manquantes ----
 
 # Visualiser la répartition des données manquantes
 gg_miss_upset(penguins)
@@ -152,7 +209,7 @@ gg_miss_upset(penguins)
 #   - 2 observations ont des NA dans les variables `bill_length_mm`, `bill_depth_mm`,
 #     `flipper_length_mm`, `body_mass_g` et `sex`
 
-# 🧹 Nettoyage des données ----
+# 5. Nettoyer les données ----
 
 # Suite à l'exploration des données, nous décidons de : 
 # - transformer la variable `year` en facteur
