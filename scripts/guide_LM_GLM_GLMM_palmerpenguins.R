@@ -305,7 +305,7 @@ penguins |>
   geom_point(aes(color = species)) +
   geom_smooth(method = "lm", color = "black") +                   # pente globale
   geom_smooth(aes(color = species), method = "lm", se = FALSE) +  # pentes intra-espèces
-  scale_color_manual(values = my_cols) +
+  # scale_color_manual(values = my_cols) +
   labs(title = "Paradoxe de Simpson",
        subtitle = "Négatif globalement, positif au sein de chaque espèce")
 

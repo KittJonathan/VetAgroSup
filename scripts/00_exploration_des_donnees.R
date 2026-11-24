@@ -61,7 +61,7 @@ library(palmerpenguins)     # jeu de données
 # Nous allons utiliser le jeu de données `penguins`, disponible dans le 
 # packages {palmerpenguins}.
 
-# ⚠️ Depuis la version ... de R, un jeu de données `penguins` est disponible
+# ⚠️ Depuis la version 4.5.0 de R, un jeu de données `penguins` est disponible
 # sans faire appel à un package externe. Cependant, les noms de certaines variables
 # diffère de ceux utilisés dans le package {palmerpenguins}. Nous privilégions donc
 # le jeu de données proposé dans ce package plutôt que le jeu de données 
@@ -224,7 +224,8 @@ penguins_clean <- penguins |>
 # Nous souhaitons exporter ce tableau de données nettoyées pour la suite
 # des analyses.
 # En exportant dans un format "classique" (.csv, .txt, ...), l'information
-# des types de variables est perdue.
+# des types de variables est perdue, et les variables concernées devront
+# à nouveau être modifiées
 
 # Il existe plusieurs solutions pour exporter le tableau tout en conservant
 # les métadonnées : 
