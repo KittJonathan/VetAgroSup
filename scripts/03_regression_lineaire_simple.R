@@ -589,3 +589,97 @@ p <- ncol(X)  # nombre de paramètres à estimer
 solve(t(X) %*% X) %*% t(X) %*% y
 
 coefficients(lm(body_mass_g ~ flipper_length_mm, data = penguins))
+
+# Résolution à l'aide d'une descente de gradient ----
+
+# Approche utilisée pour l'optimisation de paramètres d'un réseau de neurones.
+
+penguins |> 
+  ggplot(aes(x = flipper_length_mm, y = body_mass_g)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)
+
+lm(body_mass_g ~ flipper_length_mm, data = penguins)
+
+x <- scale(penguins$flipper_length_mm)
+y <- scale(penguins$body_mass_g)
+
+b1_manuel <- cov(x, y) / var(x)
+b0_manuel <- mean(y) - b1_manuel * mean(x)
+
+# y = b + w * x
+# b ..... bias (intercept)
+# w ..... weight (slope)
+
+# Initialiser les paramètres aléatoirement
+set.seed(42)
+w0 <- rnorm(1)
+b0 <- rnorm(1)
+
+# Fonction de coût : Mean Squared Error
+y_pred <- b0 + w0 * x
+error <- y - y_pred
+mse <- mean(error^2)
+
+penguins |> 
+  ggplot(aes(x = flipper_length_mm, y = body_mass_g)) +
+  geom_point() +
+  geom_abline(slope = w0, intercept = b0) +
+  xlim(c(0, 250)) +
+  ylim(c(0, 7000))
+
+# Calcul des gradients : dérivées partielles
+# loss = 1/n * sum(error^2)
+# d_loss / d_w = 2/n * sum(error)*x
+# d_loss / d_b = 2/n * sum(error)
+
+# Mise à jour des paramètres
+# w = w - alpha * d_loss / d_w
+# b = b - alpha * d_loss / d_b
+
+# Boucle : 
+# 1. Calcul des prédictions
+# 2. Calcul de la fonction de coût
+# 3. Calcul des gradients
+# 4. Mise à jour des paramètres
+
+# Hyper-paramètres : 
+#   - learning rate (taux d'apprentissage) : définit la vitesse de modification des paramètres
+#   - epochs : nb de fois que l'ensemble des données passe dans la boucle
+
+epochs <- 50
+lr <- 0.01
+
+weights <- c(w0, rep(NA, epochs))
+biases <- c(b0, rep(NA, epochs))
+loss <- vector("numeric", epochs)
+
+for (epoch in 1:epochs) {
+  
+  # epoch <- 1
+  
+  # Calcul des prédictions (forward pass)
+  y_pred <- biases[epoch] +  weights[epoch] * x
+  
+  # Calcul de la fonction de coût (loss)
+  error <- y - y_pred
+  loss[epoch] <- mean(error^2) 
+  
+  # Calcul des gradients
+  w_grad <- -2 * mean(error * x)
+  b_grad <- -2 * mean(error)
+  
+  # Mise à jour des paramètres
+  weights[epoch + 1] <- weights[epoch] - lr * w_grad
+  biases[epoch + 1] <- biases[epoch] - lr * b_grad
+
+  
+}
+
+penguins |> 
+  ggplot(aes(x = x, y = y)) +
+  geom_point() +
+  # geom_abline(slope = weights[50], intercept = biases[50])
+  geom_abline(slope = weights, intercept = biases, linewidth = 0.1)
+
+plot(1:50, loss)

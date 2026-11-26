@@ -63,11 +63,11 @@
 library(tidyverse)          # manipulation et visualisation des données
 library(naniar)             # exploration des données manquantes
 library(rstatix)            # calculs et tests statistiques
+library(GGally)             # ggpairs : matrice de nuages de points
+
 # library(skimr)              # exploration des données
-# library(naniar)             # exploration des données manquantes
 # library(palmerpenguins)     # jeu de données
 # library(broom)              # mise en forme "tidy" des sorties de modèles
-# library(GGally)             # ggpairs : matrice de nuages de points
 # library(FactoMineR)         # PCA, FAMD avec variables supplémentaires
 # library(factoextra)         # visualisations ggplot2 pour les analyses factorielles
 # library(cluster)            # daisy (Gower), silhouette
@@ -134,42 +134,32 @@ penguins |>
 # Les écarts-types et les unités diffèrent entre les variables : il faudra
 # standardiser les variables (centrer-réduire) pour l'ACP.
 
+## 3.2 Matrice de nuages de points et corrélations ----
 
-# 1.3 Matrice de nuages de points + corrélations, colorée par espèce
-peng |>
-  ggpairs(columns = vars_quanti, mapping = aes(colour = species, alpha = 0.6))
+penguins |> 
+  ggpairs(columns = 3:6,
+          mapping = aes(colour = species, alpha = 0.6)
+          )
 
-# 1.4 Matrice de corrélation globale
-X <- peng |> select(all_of(vars_quanti))
+## 3.3 Matrice de corrélation globale
+
+X <- penguins |> select(3:6)
 cor(X) |> round(2)
+
 # Observation : forte corrélation positive masse-nageoire (~0.87) ;
 # la corrélation longueur-profondeur du bec est NEGATIVE globalement
 # alors qu'elle est POSITIVE au sein de chaque espèce
 # -> paradoxe de Simpson ! Illustration :
-ggplot(peng, aes(bill_length_mm, bill_depth_mm)) +
+
+ggplot(penguins, aes(bill_length_mm, bill_depth_mm)) +
   geom_point(aes(colour = species)) +
   geom_smooth(method = "lm", se = FALSE, colour = "black") +            # global
   geom_smooth(aes(colour = species), method = "lm", se = FALSE) +       # par groupe
   labs(title = "Paradoxe de Simpson : tendance globale vs intra-espèce")
 
-
-# 2. VALEURS ATYPIQUES MULTIVARIEES --------------------------------------------
-
-# Un individu peut être normal sur chaque variable prise isolément mais
-# atypique dans la combinaison. Distance de Mahalanobis :
-# D2 = (x - mu)' S^-1 (x - mu), ~ chi2(p) si normalité multivariée.
-peng <- peng |>
-  mutate(maha = mahalanobis(X, center = colMeans(X), cov = cov(X)),
-         atypique = maha > qchisq(0.975, df = length(vars_quanti)))
-
-peng |> count(atypique)
-peng |> filter(atypique) |> select(id, species, sex, all_of(vars_quanti), maha)
-# Ne pas supprimer automatiquement : comprendre (erreur de saisie ? vrai
-# individu extrême ? effet d'une structure en groupes ?).
-# Ici, les "atypiques" globaux reflètent surtout la structure en 3 espèces.
+# 4. Analyse en Composantes Principales ----
 
 
-# 3. ACP -----------------------------------------------------------------------
 # Objectif : résumer p variables corrélées par q < p axes non corrélés
 # (composantes principales) qui maximisent la variance projetée.
 
