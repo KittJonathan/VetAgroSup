@@ -1,7 +1,11 @@
-# =============================================================================
-# REVISION DES ANALYSES MULTIVARIEES - jeu de données palmerpenguins
-# Public visé : étudiants de 3e année d'école d'ingénieurs (projet scientifique)
-# =============================================================================
+# Analyses multivariées
+
+# Table des matières ----
+
+# 0. Comment utiliser ce script
+# 1. Installer et charger les packages
+# 2. Importer les données
+
 # Plan :
 #   0. Packages et données
 #   1. Exploration : structure, valeurs manquantes, corrélations
@@ -13,62 +17,123 @@
 #   7. Analyse discriminante linéaire (LDA)
 #   8. AFDM : variables quantitatives ET qualitatives
 #   9. Pièges classiques et check-list
-# =============================================================================
 
 
-# 0. PACKAGES ET DONNEES -------------------------------------------------------
+# 0. Comment utiliser ce script ----
 
-# install.packages(c("tidyverse", "palmerpenguins", "broom", "GGally",
-#                    "FactoMineR", "factoextra", "cluster", "vegan", "MASS"))
+# Pour exécuter une commande : se placer sur la ligne de la commande et utiliser 
+# la combinaison `Ctrl` + `Entrée`, ou cliquer sur `Run`
 
-library(tidyverse)       # dplyr, ggplot2, tidyr, purrr, tibble...
-library(palmerpenguins)  # jeu de données `penguins`
-library(broom)           # mise en forme "tidy" des sorties de modèles
-library(GGally)          # ggpairs : matrice de nuages de points
-library(FactoMineR)      # PCA, FAMD avec variables supplémentaires
-library(factoextra)      # visualisations ggplot2 pour les analyses factorielles
-library(cluster)         # daisy (Gower), silhouette
-library(vegan)           # adonis2 (PERMANOVA), betadisper
+# Pour exécuter plusieurs lignes : sélectionner les lignes à exécuter et utiliser
+# la combinaison `Ctrl` + `Entrée`, ou cliquer sur `Run`
+
+# Pour exécuter l'ensemble du script : utiliser la combinaison 
+# `Ctrl` + `Shift` + `Entrée`, ou cliquer sur `Source`
+
+# Pour afficher les différentes sections : cliquer sur l'icône 📄 à droite du script
+# (à côté de `Source`)
+
+# Pour replier les sections : `Alt` + `O`
+
+# Pour développer les sections : `Alt` + `Shift` + `O`
+
+# 1. Installer et charger les packages ----
+
+# Décommenter les lignes ci-dessous si besoin et les exécuter pour 
+# télécharger les packages nécessaires
+
+# install.packages("tidyverse")
+# install.packages("skimr")
+# install.packages("palmerpenguins")
+# install.packages("naniar")
+# install.packages("broom")
+# install.packages("GGally")
+# install.packages("FactoMineR")
+# install.packages("factoextra")
+# install.packages("cluster")
+# install.packages("vegan")
+# install.packages("naniar")
+# install.packages("rstatix")
+
+# ⌨️ Raccourci clavier pour insérer ou retirer un commentaire : 
+#     `Ctrl` + `Shift` + `C`
+
+# Charger les packages :
+
+library(tidyverse)          # manipulation et visualisation des données
+library(naniar)             # exploration des données manquantes
+library(rstatix)            # calculs et tests statistiques
+# library(skimr)              # exploration des données
+# library(naniar)             # exploration des données manquantes
+# library(palmerpenguins)     # jeu de données
+# library(broom)              # mise en forme "tidy" des sorties de modèles
+# library(GGally)             # ggpairs : matrice de nuages de points
+# library(FactoMineR)         # PCA, FAMD avec variables supplémentaires
+# library(factoextra)         # visualisations ggplot2 pour les analyses factorielles
+# library(cluster)            # daisy (Gower), silhouette
+# library(vegan)              # adonis2 (PERMANOVA), betadisper
 # MASS est appelé avec MASS:: car MASS::select masque dplyr::select !
 
-theme_set(theme_minimal(base_size = 12))
+# Définir le thème ggplot
+theme_set(theme_bw())
 
-# Les 4 variables quantitatives de morphologie
-vars_quanti <- c("bill_length_mm", "bill_depth_mm",
-                 "flipper_length_mm", "body_mass_g")
+# 2. Importer les données ----
 
+# Nous importons les données nettoyées du script `00_exploration_des_donnees.R`
+penguins <- readRDS("data/penguins_clean.rds")
+
+# Si besoin, exécuter le code ci-dessous pour nettoyer les données
+penguins <- palmerpenguins::penguins |> 
+  # transformer la variable `year` en facteur
+  mutate(year = factor(year)) |> 
+  # supprimer les données manquantes
+  drop_na()
+
+# Vérifier les données importées
 glimpse(penguins)
-# 344 individus, 3 espèces (Adelie, Chinstrap, Gentoo), 3 îles, 2 sexes,
-# 4 mesures morphologiques, année.
 
+# ⌨️ Raccourci clavier pour insérer une flèche d'assignation : # `Alt` + `-`
 
-# 1. EXPLORATION ---------------------------------------------------------------
+# 3. Exploration des données ----
 
-# 1.1 Valeurs manquantes : les méthodes multivariées classiques (prcomp, lda,
-# manova...) NE gèrent PAS les NA -> suppression ou imputation nécessaire.
-penguins |>
-  summarise(across(everything(), ~ sum(is.na(.x)))) |>
-  pivot_longer(everything(), names_to = "variable", values_to = "n_NA") |>
-  filter(n_NA > 0)
+# Les méthodes multivariées classiques ne gèrent pas les données 
+# manquantes : il faut soit supprimer celles-ci, soit effectuer leur imputation.
+# Nous avons déjà supprimé les données manquantes :
 
-# Ici : suppression des lignes incomplètes (11 individus).
-# Dans un vrai projet, on s'interroge : les NA sont-ils aléatoires ?
-# (imputation possible avec le package missMDA, adaptée à l'ACP).
-peng <- penguins |>
-  drop_na() |>
-  mutate(id = row_number())
+miss_var_summary(penguins)
 
-nrow(peng)  # 333 individus
+## 3.1 Synthèse des variables quantitatives ----
 
-# 1.2 Résumé par espèce
-peng |>
-  group_by(species) |>
-  summarise(n = n(),
-            across(all_of(vars_quanti),
-                   list(moy = mean, sd = sd),
-                   .names = "{.col}_{.fn}"))
-# Remarque : les écarts-types diffèrent entre variables et les unités aussi
-# (mm vs g) -> on devra STANDARDISER (centrer-réduire) pour l'ACP.
+# Nous calculons la moyenne et l'écart-type pour chaque variable quantitative,
+# en fonction de l'espèce : 
+
+penguins |> 
+  summarise(
+    # nombre d'observations
+    n = n(),
+    # appliquer des calculs à une sélection de colonnes
+    across(
+      bill_length_mm:body_mass_g,
+      # liste des statistiques à calculer
+      list(mean = mean, sd = sd),
+      # appliquer le format "variable_fonction" aux noms des nouvelles colonnes
+      .names = "{.col}_{.fn}"),
+    # grouper les calculs par la variable `species`
+    .by = species)
+
+# Le package {rstatix} propose des fonctions utiles pour des calculs et 
+# tests statistiques, ces fonctions pouvant être utilisées dans des pipes :
+
+penguins |> 
+  group_by(species) |> 
+  rstatix::get_summary_stats(type = "mean_sd")
+
+# La fonction get_summary_stats() s'applique par défaut aux variables
+# quantitatives d'un tableau.
+
+# Les écarts-types et les unités diffèrent entre les variables : il faudra
+# standardiser les variables (centrer-réduire) pour l'ACP.
+
 
 # 1.3 Matrice de nuages de points + corrélations, colorée par espèce
 peng |>

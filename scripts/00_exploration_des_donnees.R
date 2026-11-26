@@ -10,7 +10,7 @@
 #     3.2 Type et classe
 #     3.3 Structure des données
 #     3.4 Synthèse des données 
-# 4. Explorer les données manquantes
+#     3.5 Explorer les données manquantes
 #     4.1 Données manquantes par variable
 #     4.2 Données manquantes par observation
 #     4.3 Répartition des données manquantes
@@ -42,8 +42,9 @@
 # install.packages("tidyverse")
 # install.packages("skimr")
 # install.packages("naniar")
-# install.packages("palmerpenguins")
 # install.packages("arrow")
+# install.packages("feather")
+# install.packages("palmerpenguins")
 
 # ⌨️ Raccourci clavier pour insérer ou retirer un commentaire : 
 #     `Ctrl` + `Shift` + `C`
@@ -54,6 +55,7 @@ library(tidyverse)          # manipulation et visualisation des données
 library(skimr)              # exploration des données
 library(naniar)             # exploration des données manquantes
 library(arrow)              # exporter des données en conservant les métadonnées
+library(feather)            # exporter des données en conservant les métadonnées
 library(palmerpenguins)     # jeu de données
 
 # 2. Importer les données ----
@@ -63,7 +65,7 @@ library(palmerpenguins)     # jeu de données
 
 # ⚠️ Depuis la version 4.5.0 de R, un jeu de données `penguins` est disponible
 # sans faire appel à un package externe. Cependant, les noms de certaines variables
-# diffère de ceux utilisés dans le package {palmerpenguins}. Nous privilégions donc
+# diffèrent de ceux utilisés dans le package {palmerpenguins}. Nous privilégions donc
 # le jeu de données proposé dans ce package plutôt que le jeu de données 
 # proposé par défaut dans R.
 
@@ -94,13 +96,25 @@ head(penguins)
 tail(penguins, n = 4)
 
 # Afficher une sélection aléatoire de lignes du tableau
+
+# Dans R, les tirages aléatoires sont en réalité des processus "pseudo-aléatoires",
+# faisant appel à des listes prédéterminées de valeurs.
+# Pour retrouver les mêmes résultats à chaque tirage "aléatoire", on fixe une valeur
+# de référence dans la fonction `set.seed()` (ex : 123, 42, 2026, ...)
+# Cela permet de "reproduire" des tirages aléatoires (ce qui peut sembler 
+# contre-intuitif), afin de trouver les mêmes valeurs lorsqu'on exécute le code
+# à plusieurs reprises.
+
 set.seed(42)                    # pour la reproductibilité
 slice_sample(penguins, n = 5)
 
 # ℹ️ Utilisation du pipe `|>`
 # Le pipe permet d'enchaîner les commandes : la sortie d'une commmande est
-# passée à la commande suivante. Cela rend le code plus lisible quand les commandes
-# s'enchaînent, et permmet de construire un workflow de façon logique.
+# passée à la commande suivante. 
+# Cela rend le code plus lisible quand les commandes s'enchaînent, 
+# et permmet de construire un workflow de façon logique (notamment pour 
+# la manipulation de données en enchaînant par exemple la sélection de colonnes,
+# un filtre conditionnel sur une variable, le calcul d'une nouvelle variable, ...)
 
 set.seed(42)
 
@@ -131,7 +145,7 @@ class(penguins)
 str(penguins)
 
 # Cette commande retourne dans la console : 
-#     - les dimensions du tableau (nb lignes * nb colonnes)
+#     - les dimensions du tableau : nb de lignes (observations) x nb de colonnes (variables) 
 #     - les noms des variables précédés du symbole `$` (permet d'accéder à une variable)
 #     - les types des variables (Factor, num, int, ...)
 #         - pour une variable qualitative : les niveaux (classes)
@@ -165,28 +179,40 @@ skim(penguins)
 # La fonction summary() affiche une synthèse du tableau : 
 summary(penguins)
 
-# 4. Explorer les données manquantes ----
+## 3.5 Explorer les données manquantes ----
 
 # Compter le nombre de données manquantes par variable
 colSums(is.na(penguins))
 
-## 4.1 Données manquantes par variable ----
+### 3.5.1 Données manquantes par variable ----
 
 # Afficher le nombre et la proportion de NA par variable
-miss_var_summary(penguins)
+miss_var_summary(penguins) |> 
+  # conserver les variable ayant au moins une donnée manquante
+  filter(n_miss != 0)
+
+# pct_miss : 
+# 11 NA / 344 observations = 3.20%
+# 2 NA / 344 observations = 0.581%
 
 # Table de contingence
 miss_var_table(penguins)
+# 3 variables n'ont aucune donnée manquante (3/8 = 37.5%)
+# 4 variables ont 2 données manquantes (4/8 = 50%)
+# 1 variable a 11 données manquantes (1/8 = 12.5%)
 
 # Visualiser le nombre de NA par variable
 gg_miss_var(penguins)
 
-## 4.2 Données manquantes par observation ----
+### 3.5.2 Données manquantes par observation ----
 
 # Afficher le nombre et la proportion de NA par observation
 miss_case_summary(penguins) |> 
   # conserver les observations ayant au moins une donnée manquante
   filter(n_miss != 0)
+# pct_miss : 
+# 5 NA / 8 variables = 62.5%
+# 1 NA / 8 variables = 12.5%
 
 penguins |> 
   # ajouter une colonne "index"
@@ -196,18 +222,30 @@ penguins |>
 
 # Table de contingence
 miss_case_table(penguins)
+# 333 observations n'ont aucune donnée manquante (333/344 = 96.8%)
+# 9 observations ont 1 donnée manquante (9/344 = 2.62%)
+# 2 observations ont 2 données manquantes (2/344 = 0.581%)
 
 # Visualiser le nombre de données manquantes par observation
 gg_miss_case(penguins)
 
-## 4.3 Répartition des données manquantes ----
+### 3.5.3 Répartition des données manquantes ----
 
-# Visualiser la répartition des données manquantes
+# Visualiser la répartition des données manquantes à l'aide
+# d'un "upset plot" :
+
 gg_miss_upset(penguins)
+
 # Lecture : 
-#   - 9 observations ont 1 NA dans la variable `sex`
-#   - 2 observations ont des NA dans les variables `bill_length_mm`, `bill_depth_mm`,
-#     `flipper_length_mm`, `body_mass_g` et `sex`
+#   - Barplot horizontal à gauche du plot :
+#       - 2 observations ont 1 NA dans les variables `bill_length_mm`, `bill_depth_mm`, 
+#         `flipper_length_mm` et `body_mass_g`
+#       - 11 observations ont 1 NA dans la variable `sex`
+#   - Barplot vertical et liens entre variables au centre du plot :
+#       - 9 observations ont 1 NA dans la variable `sex`
+#       - 2 observations ont 1 NA dans les variables `bill_length_mm`, `bill_depth_mm`, 
+#         `flipper_length_mm`, `body_mass_g` et `sex` 
+
 
 # 5. Nettoyer les données ----
 
@@ -241,3 +279,7 @@ load("data/penguins_clean.RData")  # charge les données dans l'environnement
 # Exporter au format `parquet` (utile pour les données volumineuses)
 arrow::write_parquet(penguins_clean, "data/penguins_clean.parquet")
 arrow::read_parquet("data/penguins_clean.parquet")
+
+# Exporter au format `feather`
+feather::write_feather(penguins_clean, "data/penguins_clean.feather")
+feather::read_feather("data/penguins_clean.feather")

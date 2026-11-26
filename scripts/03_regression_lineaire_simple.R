@@ -48,8 +48,6 @@ library(GGally)             # matrice de comparaisons
 
 theme_set(theme_bw())       # thème ggplot2
 
-# ⌨️ Raccourci clavier pour insérer une flèche d'assignation : # `Alt` + `-`
-
 # 2. Importer les données ----
 
 # Nous importons les données nettoyées du script `00_exploration_des_donnees.R`
@@ -61,6 +59,8 @@ penguins <- palmerpenguins::penguins |>
   mutate(year = factor(year)) |> 
   # supprimer les données manquantes
   drop_na()
+
+# ⌨️ Raccourci clavier pour insérer une flèche d'assignation : # `Alt` + `-`
 
 # Vérifier les données importées
 glimpse(penguins)
