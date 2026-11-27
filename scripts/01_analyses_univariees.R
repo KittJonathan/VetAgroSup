@@ -195,6 +195,21 @@ describe_distribution(penguins)
 # Une variable avec un fort biais négatif aura une moyenne inférieure à la médiane
 # Une variable avec un fort biais positif aura une moyenne supérieure à la médiane
 
+# g1 = (sum((x - mean(x))^3) / n) / (sum((x - mean(x))^2) / n)^1.5
+# g2 = g1 * sqrt(n * (n - 1)) / (n - 2)
+# g3 = g1 * ((1 - 1 / n))^1.5
+
+x <- penguins$body_mass_g
+n <- length(x)
+
+sk1 <- (sum((x - mean(x))^3) / n) / (sum((x - mean(x))^2) / n)^1.5
+sk2 <- sk1 * sqrt(n * (n - 1)) / (n - 2)
+sk3 <- sk1 * ((1 - 1 / n))^1.5
+
+all.equal(sk1, skewness(penguins$body_mass_g, type = "1")$Skewness)  # méthode classique
+all.equal(sk2, skewness(penguins$body_mass_g, type = "2")$Skewness)  # SAS, SPSS
+all.equal(sk3, skewness(penguins$body_mass_g, type = "3")$Skewness)  # Minitab
+
 # Exemple : distribution de la variable `body_mass_g`
 
 # Le package {datawizard} propose des fonctions permet de calculer la skewness et la kurtosis
@@ -227,12 +242,81 @@ penguins |>
 # - excès de kurtosis < 0 ....... distribution leptokurtique (queues plus épaisses qu'une distribution normale)
 # - excès de kurtosis > 0 ....... distribution platykurtique (queues moins épaisses qu'une distribution normale)
 
+x <- penguins$body_mass_g
+n <- length(x)
+
+ku1 <- n * sum((x - mean(x))^4) / (sum((x - mean(x))^2)^2) - 3
+ku2 <- ((n + 1) * ku1 + 6) * (n - 1)/((n - 2) * (n - 3))
+ku3 <- (ku1 + 3) * (1 - 1 / n)^2 - 3
+
+all.equal(ku1, kurtosis(penguins$body_mass_g, type = "1")$Kurtosis)  # méthode classique
+all.equal(ku2, kurtosis(penguins$body_mass_g, type = "2")$Kurtosis)  # SAS, SPSS
+all.equal(ku3, kurtosis(penguins$body_mass_g, type = "3")$Kurtosis)  # Minitab
+
 # Visualisation d'un excès de kurtosis < 0
 
 penguins |> 
   ggplot(aes(x = flipper_length_mm)) +
   geom_density() 
+
+
+# A ajouter ----
+
+# Histogrammes ----
+# Boxplots ----
+# Violin plots ----
+# ggdist ----
+
+# Half-Eye Plot (Density + Summary Intervals)
+
+ggplot(penguins, aes(x = body_mass_g)) +
+  stat_halfeye(
+    fill = "steelblue",
+    alpha = 0.7,
+    .width = c(0.50, 0.95), # 50% (thick) and 95% (thin) quantile intervals
+    point_interval = "median_qi" # Median + quantile interval
+  ) +
+  labs(title = "UDistribution de la masse", x = "Body mass (g)", y = NULL) +
+  theme_minimal()
+
+
+# Raincloud Plot (Density + Intervals + Raw Data)
+
+ggplot(penguins, aes(x = body_mass_g)) +
+  # Top half: smooth density + summary interval
+  stat_halfeye(
+    adjust = 0.7,       # Bandwidth smoothness
+    width = 0.6,
+    .width = c(0.66, 0.95),
+    justification = -0.2,
+    fill = "darkorange",
+    alpha = 0.7
+  ) +
+  # Bottom half: individual observations as dots
+  stat_dots(
+    side = "left",      # Places dots below the baseline on a horizontal plot
+    justification = 1.1,
+    binwidth = 0.8,
+    color = "gray30"
+  ) +
+  labs(title = "Raincloud Plot of MPG", x = "Miles per Gallon", y = NULL) +
+  theme_minimal()
+
+# Quantile Dotplot (Discretized Distribution)
+
+ggplot(penguins, aes(x = body_mass_g)) +
+  stat_dotsinterval(
+    quantiles = 20,     # Divides distribution into 20 equal-probability dots
+    fill = "seagreen",
+    color = "seagreen"
+  ) +
+  labs(title = "Quantile Dotplot (20 Quantiles)", x = "Miles per Gallon", y = NULL) +
+  theme_minimal()
+
+# Calcul de la skewness + kurtosis ----
+# qq-plot + interprétation ----
   
+ggplot()
 
 # 3. Tests ----
 
